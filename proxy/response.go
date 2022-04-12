@@ -21,8 +21,7 @@ type Response struct {
 //降低垃圾回收频率，我们使用pool，每个P一个Pool，自动伸缩
 var dataPoll = sync.Pool{
 	New: func() any {
-		data := make([]byte, 0, MaxProtocolLength)
-		return data
+		return make([]byte, 0, MaxProtocolLength)
 	},
 }
 

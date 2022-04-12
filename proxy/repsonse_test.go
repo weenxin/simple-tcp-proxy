@@ -1,7 +1,6 @@
 package proxy_test
 
 import (
-	"errors"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/weenxin/simple-tcp-proxy/proxy"
@@ -14,49 +13,6 @@ const (
 	clientStatusShouldNeverRead
 	clientStatusFailed
 )
-
-var errClientFailed = errors.New("client failed for unknown reason")
-var errNeverRead = errors.New("client should never read")
-
-type mockProxy struct {
-	clients map[server.Client]bool
-}
-
-func (p mockProxy) PutClient(client server.Client) {
-	p.clients[client] = true
-}
-func (p mockProxy) RemoveClient(client server.Client) {
-	delete(p.clients, client)
-}
-func (p mockProxy) GetMaxCount() int {
-	return 1000
-}
-
-type mockStringsClient struct {
-	protocols [][]byte
-	status    clientStatus
-	index     int
-}
-
-func (f mockStringsClient) Request([]byte) error {
-	return nil
-}
-func (f *mockStringsClient) Read(data []byte) (int, error) {
-
-	if f.status == clientStatusFailed {
-		return 0, errClientFailed
-	} else if f.status == clientStatusShouldNeverRead {
-		ginkgo.Fail("should never be read")
-	}
-	if f.index == len(f.protocols) {
-		return 0, io.EOF
-	}
-
-	length := copy(data, f.protocols[f.index])
-	gomega.Expect(length).To(gomega.Equal(len(f.protocols[f.index])))
-	f.index++
-	return length, nil
-}
 
 var _ = ginkgo.Describe("Repsonse", func() {
 

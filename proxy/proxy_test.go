@@ -9,19 +9,6 @@ import (
 	"sync"
 )
 
-type clientStatus int8
-
-type mockProxyServer struct {
-	clients  []*mockStringsClient
-	response [][]byte
-}
-
-func (s *mockProxyServer) Connect() (server.Client, error) {
-	client := mockStringsClient{status: clientStatusOpen, protocols: s.response}
-	s.clients = append(s.clients, &client)
-	return &client, nil
-}
-
 var _ = ginkgo.Describe("Proxy", func() {
 	var s server.Server
 	var p *proxy.ServerProxy
@@ -150,7 +137,7 @@ var _ = ginkgo.Describe("Proxy", func() {
 				p = proxy.NewProxy(5, s)
 			})
 
-			ginkgo.It("close connection and return server protocol not matched", func() {
+			ginkgo.It("return normal case", func() {
 				response, err := p.Request([]byte("Qaafdas"))
 				gomega.Expect(err).To(gomega.BeNil())
 				protocol, err := response.Read()
@@ -237,7 +224,7 @@ var _ = ginkgo.Describe("Proxy", func() {
 				p = proxy.NewProxy(5, s)
 			})
 
-			ginkgo.It("close connection and return server protocol not matched", func() {
+			ginkgo.It("no more than max connection and connection reused", func() {
 
 				var wg sync.WaitGroup
 				wg.Add(p.GetMaxCount())

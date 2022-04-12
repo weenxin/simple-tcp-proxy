@@ -15,6 +15,8 @@ var (
 	ErrResponseProtocolFormat          = errors.New("server response protocol not start with 'D' and end with 'Z'")
 )
 
+//Proxy 是proxy的性能抽象，部分接口没有开放，可以按需开放
+//TODO add Request等接口
 type Proxy interface {
 	PutClient(server.Client)
 	RemoveClient(server.Client)
