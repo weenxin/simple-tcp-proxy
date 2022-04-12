@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"github.com/weenxin/simple-tcp-proxy/proxy"
 	"github.com/weenxin/simple-tcp-proxy/server"
 	"io"
 )
@@ -58,6 +59,10 @@ func (f *mockStringsClient) Read(data []byte) (int, error) {
 //mockProxy 用来测试response对象行为
 type mockProxy struct {
 	clients map[server.Client]bool
+}
+
+func (p mockProxy) Request(query []byte) (*proxy.Response, error) {
+	return nil, nil
 }
 
 func (p mockProxy) PutClient(client server.Client) {
