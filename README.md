@@ -14,23 +14,29 @@
 #### 1.接收用户请求
 
 **用户请求报文大小，可以一次性接收，不需要单独处理**
+
 考虑一个db应用，批次插入的数据量会比较大，一次性接收用户报文是否可行？
 - 这种情况可以`PrepareStatement`这种方式解决，先`PrepareStatement`返回一个Id，然后基于Id和数据流做batch，分batch发送。与假设不冲突。
 
 **是否有TCP粘包的问题？**
+
 Server端与Client端是一个单双工的工作方式：
 - client端先发送数据；
 - server端接收到请求，处理请求，多次返回结果（TCP粘包）；
 - client再次发送请求；
-所以从Proxy端来看，接收Client端请求，不需要处理TCP粘包，【如果需要处理，我们需要重新设计Client端的Protocol】。
+
+所以Proxy端接收Client端请求过程，不需要处理TCP粘包，【如果需要处理，我们需要重新设计Client端的Protocol】。
+
 
 
 #### 2.处理Server端返回
 
 **需要连接池支持**
+
 如果每次对一个请求创建一个新的链接，在高并发的场景下，很容易把server端的端口占用满，也失去了Proxy的意义。
 
 **Server端的返回信息要及时返回给client端，方便用户分批处理数据，同时降低Proxy内存压力**
+
 - 每个Protocol行需要尽快返回，因为每个protocol是可以独立解析的，比如一行数据；此时需要处理TCP粘包的问题；
 - 不能及时将数据返回给client端，会导致proxy端为了接收大量数据而内存膨胀；
 
@@ -39,10 +45,12 @@ Server端与Client端是一个单双工的工作方式：
 #### 3.Server Client重用
 
 **放弃异常连接，用户重试**
+
 - 当Server端重启时，已经建立的连接会失效，应该及时删除；
 - 当用户再次请求时，基于新启动的server重新建立连接，保障故障自愈。
 
 **复用正常连接**
+
 - 用户读取完成所有数据response后，回收连接；
 - 用户主动`Close`连接，应该将server端的未读报文清空，回收连接；
 
@@ -58,7 +66,7 @@ Server端与Client端是一个单双工的工作方式：
 - Server （Proxy连接server 调用Connect后获取一个Client）
 - Client（与真实Server端的连接）
 - Response：多个`D`开头的字符序列，直到收到一个`Z`
-- Protocl： `D`开头的字符序列
+- Protocol： `D`开头的字符序列
 
 <!-- 聚焦在Server端 -->
 <!-- - Server 处理请求，返回数据； -->
@@ -78,7 +86,7 @@ Server端与Client端是一个单双工的工作方式：
 
 ##  结果查看
 
-已经完成了单元测试，可以在[github acton](https://github.com/weenxin/simple-tcp-proxy/actions) 查看结果
+已经完成了单元测试，[查看运行结果](https://github.com/weenxin/simple-tcp-proxy/actions) 
 
 
 ## 设计与开发
