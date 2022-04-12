@@ -44,7 +44,7 @@ func (p *ServerProxy) ClientCount() int {
 	return len(p.clients)
 }
 func (p *ServerProxy) Request(query []byte) (*Response, error) {
-	if len(query) == 0 || query[0] != 'Q' {
+	if len(query) == 0 || !IsGoodRequest(query) {
 		return nil, ErrBadRequest
 	}
 	p.lock.Lock()
