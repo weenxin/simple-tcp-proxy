@@ -9,6 +9,24 @@
   - 收到Server端的信息，如果以'Z'开头结束本次请求；（只有一个字节）
 
 
+
+## 模型抽象
+
+<!-- 聚焦在用户使用测 -->
+<!-- - ServerClient 代表系统后端，直接连接proxy -->
+
+抽象以下组件：
+- Request （用户请求）
+- Proxy （接收用户请求）
+- Server （Proxy连接server 调用Connect后获取一个Client）
+- Client（与真实Server端的连接）
+- Response：多个`D`开头的字符序列，直到收到一个`Z`
+- Protocol： `D`开头的字符序列
+
+<!-- 聚焦在Server端 -->
+<!-- - Server 处理请求，返回数据； -->
+
+
 ### 分析
 
 #### 1.接收用户请求
@@ -47,7 +65,7 @@ Server端与Client端是一个单双工的工作方式：
 **放弃异常连接，用户重试**
 
 - 当Server端重启时，已经建立的连接会失效，应该及时删除；
-- 当用户再次请求时，基于新启动的server重新建立连接，保障故障自愈。
+- 当用户再次请求时，基于新启动的server重新建立连接，故障自愈。
 
 **复用正常连接**
 
@@ -55,28 +73,12 @@ Server端与Client端是一个单双工的工作方式：
 - 用户主动`Close`连接，应该将server端的未读报文清空，回收连接；
 
 
-## 模型抽象
-
-<!-- 聚焦在用户使用测 -->
-<!-- - ServerClient 代表系统后端，直接连接proxy -->
-
-抽象以下组件：
-- Request （用户请求）
-- Proxy （接收用户请求）
-- Server （Proxy连接server 调用Connect后获取一个Client）
-- Client（与真实Server端的连接）
-- Response：多个`D`开头的字符序列，直到收到一个`Z`
-- Protocol： `D`开头的字符序列
-
-<!-- 聚焦在Server端 -->
-<!-- - Server 处理请求，返回数据； -->
-
 
 ## 使用方法
 
 - `p := proxy.NewProxy` ，新建一个Proxy
--  `resonse,err := p.Request([]byte("Qfist"))` , 发送请求
-- `for data, err := response.Read(); err != nil ; {}` 迭代遍历response获得结果;
+-  `resonse,err := p.Request([]byte("Qfist"))` , 发送请求，获得response
+- `for protocol, err := response.Read(); err != nil ; {}` 迭代遍历response获得每个protocol;
 
 ### 优点
 - 调用方无需感知连接池等信息，但确实有连接池
@@ -274,14 +276,14 @@ ginkgo.Describe("read multiple protocol", ginkgo.Ordered, func() {
 	})
 
 	ginkgo.Describe("read message protocol with two protocol", func() {
-	//可以按到第一个报文
+	//可以接收第一个报文
 		ginkgo.It("first time return the first protocol", func() {
 			data, err := response.Read()
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 			gomega.Expect(string(data)).To(gomega.Equal("Daaaaaaaaa"))
 			gomega.Expect(response.IsClosed()).To(gomega.Equal(false))
 		})
-		//可以按到第一个报文
+		//可以接收第二个报文
 		ginkgo.It("secold time return the second protocol", func() {
 			data, err := response.Read()
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
@@ -511,7 +513,38 @@ var dataPoll = sync.Pool{
 		return make([]byte, 0, MaxProtocolLength)
 	},
 }
+```
 
+新建response
+```go
+func NewResponse(client server.Client, parent Proxy) *Response {
+	return &Response{
+		client: client,
+		parent: parent,
+		//从pool中取得，复用缓存
+		data: dataPoll.Get().([]byte)[:0],
+	}
+}
+```
+
+归还内存
+
+```go
+func (r *Response) removeClient() {
+	//设置为空闲
+	r.parent.RemoveClient(r.client)
+	//归还buffer
+	dataPoll.Put(r.data)
+	r.isClosed = true
+}
+
+func (r *Response) putClient() {
+	//设置为空闲
+	r.parent.PutClient(r.client)
+	//归还buffer
+	dataPoll.Put(r.data)
+	r.isClosed = true
+}
 ```
 
 #### 多帧复用
@@ -530,6 +563,6 @@ var dataPoll = sync.Pool{
 #### 所有需要加锁才能调用的函数以Locked结尾
 - createResponseLocked
 - getCacheClientLocked
-- clearClientLocked
+- deleteClientLocked
 
 
