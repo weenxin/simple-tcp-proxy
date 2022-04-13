@@ -506,6 +506,7 @@ ginkgo.Describe("reuse a client, serial request to proxy two time ", func() {
 
 ```go
 //降低垃圾回收频率，我们使用pool，每个P一个Pool，自动伸缩
+//理论情况下，有多少个最大连接数，就会有多少个缓存对象，所以内存应该是 MaxProtocolLength * maxConnection
 var dataPoll = sync.Pool{
 	New: func() any {
 		return make([]byte, 0, MaxProtocolLength)
@@ -547,7 +548,7 @@ func (r *Response) putClient() {
 
 #### 多帧复用
 一个Response读取过程中，只使用一片内存，没有多余内存分配。
-```
+```go
 //resonse.go：Read
 
 //清空上一帧的缓存
