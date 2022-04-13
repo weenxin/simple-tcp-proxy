@@ -27,9 +27,9 @@
 <!-- - Server 处理请求，返回数据； -->
 
 
-### 分析
+## 分析
 
-#### 1.接收用户请求
+### 1.接收用户请求
 
 **用户请求报文大小，可以一次性接收，不需要单独处理**
 
@@ -47,7 +47,7 @@ Server端与Client端是一个单双工的工作方式：
 
 
 
-#### 2.处理Server端返回
+### 2.处理Server端返回
 
 **需要连接池支持**
 
@@ -60,7 +60,7 @@ Server端与Client端是一个单双工的工作方式：
 
 
 
-#### 3.Server Client重用
+### 3.Server Client重用
 
 **放弃异常连接，用户重试**
 
@@ -80,7 +80,7 @@ Server端与Client端是一个单双工的工作方式：
 -  `resonse,err := p.Request([]byte("Qfist"))` , 发送请求，获得response
 - `for protocol, err := response.Read(); err != nil ; {}` 迭代遍历response获得每个protocol;
 
-### 优点
+## 优点
 - 调用方无需感知连接池等信息，但确实有连接池
 - 服务端重启，自动重新连接
 
@@ -250,8 +250,6 @@ ginkgo.Describe("Read single protocol", ginkgo.Ordered, func() {
 
 
 ```
-
-
 
 
 #### TCP粘包问题解决
